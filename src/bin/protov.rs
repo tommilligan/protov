@@ -12,7 +12,7 @@ use protov::ProtovDecoder;
 struct Opt {
     /// Input compiled filedescriptorset (.fdset) file
     #[structopt(short, long, parse(from_os_str))]
-    field_descriptor_set: PathBuf,
+    fdset_files: Vec<PathBuf>,
 
     /// Message type (fully qualified, starts with leading period)
     #[structopt(short, long)]
@@ -20,19 +20,17 @@ struct Opt {
 }
 
 use exitfailure::ExitFailure;
-use failure::ResultExt;
+use failure::{Error, ResultExt};
 use protobuf::parse_from_reader;
 use std::fs::File;
 use std::path::PathBuf;
 
-pub fn get_loaded_descriptors(fdset_files: Vec<PathBuf>) -> Vec<FileDescriptorSet> {
+pub fn get_loaded_descriptors(fdset_files: Vec<PathBuf>) -> Result<Vec<FileDescriptorSet>, Error> {
     let mut descriptors: Vec<FileDescriptorSet> = Vec::new();
 
     for fdset_path in fdset_files {
-        let mut fdset_file = match File::open(fdset_path.as_path()) {
-            Ok(x) => x,
-            Err(e) => panic!("Couldn't open fdset file: {}", e),
-        };
+        let mut fdset_file = File::open(fdset_path.as_path())
+            .with_context(|_| format!("Couldn't open fdset file: {:?}", fdset_path))?;
         match parse_from_reader(&mut fdset_file) {
             Err(_) => continue,
             Ok(x) => descriptors.push(x),
@@ -42,7 +40,7 @@ pub fn get_loaded_descriptors(fdset_files: Vec<PathBuf>) -> Vec<FileDescriptorSe
     if descriptors.is_empty() {
         panic!("No valid fdset files found.");
     }
-    descriptors
+    Ok(descriptors)
 }
 
 fn main() -> Result<(), ExitFailure> {
@@ -59,8 +57,7 @@ fn main() -> Result<(), ExitFailure> {
 
     let bytes: Vec<u8> = stdin_string.bytes().collect();
 
-    let path: PathBuf = ["email.fdset"].iter().collect();
-    let descriptors = get_loaded_descriptors(vec![path]);
+    let descriptors = get_loaded_descriptors(opt.fdset_files)?;
 
     let decoder = ProtovDecoder::new(descriptors, &opt.message_type);
     let mut formatter = CustomFormatter::new();

@@ -6,7 +6,7 @@ message Chain {
 }
 
 message Email {
-string sender = 1;
-repeated string recipients_to = 2;
-string subject = 3;
+  string sender = 1;
+  repeated string recipients_to = 2;
+  string subject = 3;
 }
