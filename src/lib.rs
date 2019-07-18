@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate serde;
+
 use std::io::Write;
 
 use failure::{Error, ResultExt};
@@ -5,13 +8,14 @@ use protobuf::descriptor::FileDescriptorSet;
 use protobuf::CodedInputStream;
 use serde::{Deserialize, Serialize};
 use serde_json::Serializer;
-use serde_protobuf::de::Deserializer;
 use serde_protobuf::descriptor::Descriptors;
 use serde_value::Value;
 
 pub mod formatter;
+pub mod serde_protov;
 
 use formatter::CustomFormatter;
+use serde_protov::de::Deserializer;
 
 pub struct ProtovDecoder<'a> {
     pub descriptors: Descriptors,
